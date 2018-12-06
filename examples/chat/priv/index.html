@@ -8,10 +8,10 @@
         jQuery(document).ready(init);
 
         function init() {
-          jQuery("#roomContainer").hide();  
+          jQuery("#roomContainer").hide();
           jQuery("#alertContainer").hide();
           jQuery("#connectButton").hide();
-          if(!("WebSocket" in window)){  
+          if(!("WebSocket" in window)){
             showAlert('<span style="color: red;">Your Web Browser doesn\'t support Websockets!</span>');
           } else {
             jQuery("#connectButton").show();
@@ -19,28 +19,39 @@
         };
 
         function connect() {
-        wsHost = "ws://" + window.location.host + "/websocket";
-        websocket = new WebSocket(wsHost);
-        websocket.onopen = function(evt) { onOpen(evt) }; 
-        websocket.onclose = function(evt) { onClose(evt) }; 
-        websocket.onmessage = function(evt) { onMessage(evt) }; 
-        websocket.onerror = function(evt) { onError(evt) }; 
-      }; 
+          var userName = jQuery('#nameField').val();
+          if (userName.length > 0){
+            wsHost = "ws://" + window.location.host + "/websocket/"+ userName;
+            websocket = new WebSocket(wsHost);
+            websocket.onopen = function(evt) { onOpen(evt) };
+            websocket.onclose = function(evt) { onClose(evt) };
+            websocket.onmessage = function(evt) { onMessage(evt) };
+            websocket.onerror = function(evt) { onError(evt) };
+            jQuery('#connectButton').hide();
+            jQuery('#nameField').hide();
+          } else {
+            showAlert('<span style="color: red;">Please enter your name!</span>');
+          }
 
-      function onOpen(evt) { 
+      };
+
+      function onOpen(evt) {
         jQuery('#roomContainer').fadeIn('slow');
-      };  
+      };
 
-      function onClose(evt) { 
+      function onClose(evt) {
         jQuery('#roomContainer').fadeOut('slow');
         showAlert('<span style="color: red;">Websocket connection has been closed!</span>');
-      };  
+      };
 
-      function onMessage(evt) { 
+      function onMessage(evt) {
         showMessage(jQuery.parseJSON(evt.data));
-      };  
+      };
 
       function onError(evt) {
+        if(evt.data == 'Websocket connection has been closed!'){
+          jQuery('#connectButton').show();
+        }
         showAlert('<span style="color: red;">ERROR: ' + evt.data+ '</span>');
       };
 
@@ -55,7 +66,7 @@
       };
 
       function showMessage(data) {
-        jQuery('#chatContainer').append('<div>' + data.sender + ' -> ' + data.msg + '</div>');
+        jQuery('#chatContainer').append('<div>' + data.timestamp + ' ' + data.sender + ' -> ' + data.msg + '</div>');
       };
 
       function showAlert(txt) {
@@ -73,6 +84,7 @@
   </head>
   <body>
     <div id="alertContainer"></div>
+    <input id="nameField" type="text" placeholder="Input your name" />
     <input id="connectButton" type="button" value="Join the Chat Room!" onclick="connect();"/>
 
     <div id="roomContainer">
@@ -82,7 +94,7 @@
           <input id="textToSend" type="text" />
         </span>
         <span>
-          <input type="submit" value="send"/> 
+          <input type="submit" value="send"/>
         </span>
       </form>
     </div>
