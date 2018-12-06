@@ -1,8 +1,11 @@
 -module(twitch_emotes).
--export([genEmoteJSON/0, openContent/1]).
+-export([genEmoteJSON/0, openContent/1,  getEmoteID/1]).
 
 openContent(JSONDecode) ->
   element(1, JSONDecode).
+
+getEmoteID(Elem) ->
+  element(2, lists:nth(3, Elem)).
 
 genEmoteJSON() ->
   jiffy:decode("{

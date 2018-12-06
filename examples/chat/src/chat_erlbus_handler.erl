@@ -7,34 +7,38 @@
 handle_msg(Msg, Context) ->
   Text = binary_to_list(element(2,Msg)),
   ProcessedText = process_msg(Text),
-  % erlang:display(twitch_emotes:genEmoteJSON()),
   ModifiedMsg = setelement(2,Msg,list_to_binary(ProcessedText)),
   Context ! {message_published, ModifiedMsg}.
 
 process_msg(Text) ->
-  EmoteTuples = generate_emote_tuple(),
   Words = string:split(Text, " ", all),
-  WordsProcessed = lists:map(check_emotes(EmoteTuples), Words),
+  WordsProcessed = lists:map(fun check_emotes/1, Words),
   lists:concat(lists:join(" ",WordsProcessed)).
 
-% Tambah daftar emote
-generate_emote_tuple() ->
-  [
-    {":)", "https://static-cdn.jtvnw.net/jtv_user_pictures/chansub-global-emoticon-ebf60cd72f7aa600-24x18.png"},
-    {":(", "https://static-cdn.jtvnw.net/jtv_user_pictures/chansub-global-emoticon-d570c4b3b8d8fc4d-24x18.png"},
-    {"OMEGALUL", "https://cdn.betterttv.net/emote/583089f4737a8e61abb0186b/1x"}
-  ].
+check_emotes(Elem) ->
+  CheckerFuncs = [fun check_emotes_manual/1 , fun check_twitch_emotes/1],
+  Result = lists:foldl(fun (F, V) -> if element(1, V) == false -> F(element(2,V)); true -> V end end, {false, Elem}, CheckerFuncs),
+  element(2, Result).
 
-check_emotes(EmoteTuples) ->
-  fun(Elem) ->
-    check_emotes(EmoteTuples, Elem)
-  end.
-
-check_emotes(EmoteTuples, Word) ->
+check_emotes_manual(Word) ->
+  EmoteTuples = local_emotes:generate_emote_tuple(),
   Result = lists:keyfind(Word, 1, EmoteTuples),
   if
     Result == false ->
-      Word;
+      {false, Word};
     true ->
-      "<img src='"++element(2, Result)++"' alt='"++element(1,Result)++"'>"
+      {true, "<img src='"++element(2, Result)++"' alt='"++element(1,Result)++"'>"}
+  end.
+
+
+check_twitch_emotes(Word) ->
+  EmoteTuples = twitch_emotes:openContent(twitch_emotes:genEmoteJSON()),
+  KeyFound = lists:keyfind(list_to_binary(Word), 1, EmoteTuples),
+  if
+    KeyFound == false ->
+      {false, Word};
+    true ->
+      EmoteData = twitch_emotes:openContent(element(2, KeyFound)),
+      ID = twitch_emotes:getEmoteID(EmoteData),
+      {true, lists:concat(["<img src='https://static-cdn.jtvnw.net/emoticons/v1/", ID, "/1.0' alt='", Word, "'>"])}
   end.

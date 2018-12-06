@@ -29,7 +29,13 @@ websocket_handle(_Data, Req, State) ->
   {ok, Req, State}.
 
 websocket_info({message_published, {Sender, Msg}}, Req, State) ->
-  {reply, {text, jiffy:encode({[{sender, Sender}, {msg, Msg}]})}, Req, State};
+  {{Year, Month, Day}, {Hour, Minute, Second}} = erlang:localtime(),
+  Timestamp = list_to_binary(
+    lists:concat(
+      lists:join("/",[Year, Month, Day])++ [" "] ++ lists:join(":", [Hour, Minute, Second])
+      )
+  ),
+  {reply, {text, jiffy:encode({[{sender, Sender}, {msg, Msg}, {timestamp, Timestamp}]})}, Req, State};
 websocket_info(_Info, Req, State) ->
   {ok, Req, State}.
 
@@ -41,8 +47,5 @@ websocket_terminate(_Reason, _Req, State) ->
 %% Private methods
 
 get_name(Req) ->
-  {{Host, Port}, _} = cowboy_req:peer(Req),
-  Name = list_to_binary(string:join([inet_parse:ntoa(Host), 
-    ":", io_lib:format("~p", [Port])], "")),
-  Name.
-  
+  {Username, _} = cowboy_req:binding(userName, Req),
+  Username.
