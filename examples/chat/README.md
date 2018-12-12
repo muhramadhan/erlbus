@@ -16,3 +16,13 @@ $ make run
 ```
 
 Then point your browser at [http://localhost:8080](http://localhost:8080).
+
+Available local emotes:
+* :)
+* :(
+* <3
+* :D
+* ;)
+
+Twitch emotes:
+https://twitchemotes.com/
